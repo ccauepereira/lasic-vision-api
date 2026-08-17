@@ -1,0 +1,24 @@
+# Plano do Projeto
+
+## Nome
+LASIC VISION API
+
+## Objetivo
+Criar uma API em FastAPI para organizar tarefas de analise de imagens em um contexto de laboratorio academico.
+
+## Tecnologias que vou estudar
+- Git e Github
+- Gitflow
+- POO em python
+- FastAPI
+- Banco de dados
+- SOLID
+- Clean code
+- Testes
+- DOcker
+
+## Ideia principal
+O sistema vai permitir cadastrar imagens, criar tarefas de analise, listar tarefas pendentes e concluir tarefas.
+
+## O que eu quero demonstrar
+Quero demonstrar organizacao, aprendizado rapido, clareza tecnica e capacidade de evoluir um projeto com boas praticas.
