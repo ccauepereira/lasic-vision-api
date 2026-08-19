@@ -1,6 +1,11 @@
-def main():
-    print("LASIC Vision API")
+from fastapi import FastAPI
+from app.routers import analises, health
 
+app = FastAPI(
+    title="LASIC VISION API",
+    version="0.1.0",
+    description = "Primeira API com FastAPI com OpenCV"
+)
 
-if __name__ == "__main__":
-    main()
+app.include_router(health.router)
+app.include_router(analises.router)
