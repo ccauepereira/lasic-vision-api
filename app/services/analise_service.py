@@ -1,5 +1,5 @@
 from app.schemas.analise import AnaliseImagemResponse
-from app.vision.opencv_analyzer import OpenCVAnalyzer
+from app.visao.opencv_analyzer import OpenCVAnalyzer
 
 class AnaliseImagemService:
     def __init__(self):

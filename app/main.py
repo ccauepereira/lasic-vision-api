@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import analises, health
-
+from app.api.rotas import saude
+from app.routers import analises
 app = FastAPI(
     title="LASIC VISION API",
     version="0.1.0",
@@ -22,5 +22,5 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(health.router)
+app.include_router(saude.router)
 app.include_router(analises.router)
