@@ -24,6 +24,7 @@ def resumo(self):
     )
 
 tarefa = Tarefa(1,"Analisar imagem X")
+
 tarefa.atribuir_responsavel("Cauê")
 tarefa.adicionar_tag("Celula")
 tarefa.adicionar_tag("microscopio")
