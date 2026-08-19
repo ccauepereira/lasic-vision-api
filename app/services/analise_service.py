@@ -3,11 +3,11 @@ from app.vision.opencv_analyzer import OpenCVAnalyzer
 
 class AnaliseImagemService:
     def __init__(self):
-        self.__annotations__ = OpenCVAnalyzer()
+        self.analyzer = OpenCVAnalyzer()
 
     def analisar(self, nome_arquivo: str, conteudo: bytes) -> AnaliseImagemResponse:
-        resultado = self.analisar.analisar(
-            nome_arquivo = nome_arquivo,
+        resultado = self.analyzer.analisar(
+            nome_arquivo=nome_arquivo,
             conteudo=conteudo
         )
 
