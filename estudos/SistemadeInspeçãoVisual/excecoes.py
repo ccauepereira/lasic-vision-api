@@ -1,0 +1,2 @@
+class InspecaoError(Exception):
+    pass
