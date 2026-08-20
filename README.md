@@ -1,5 +1,5 @@
 ```markdown
-# LASIC Vision API
+### LASIC Vision API
 
 API desenvolvida em FastAPI para gerenciar tarefas de análise de imagens em um contexto acadêmico/laboratorial.
 
@@ -18,7 +18,7 @@ A LASIC Vision API organiza o fluxo de uma tarefa de análise de imagem:
 7. Concluir tarefa;
 8. Visualizar dados no frontend.
 
-## Tecnologias
+### Tecnologias
 
 ### Backend
 - Python 3.10
@@ -41,7 +41,7 @@ A LASIC Vision API organiza o fluxo de uma tarefa de análise de imagem:
 - Podman/Docker
 - Volume local para persistência do SQLite
 
-## Arquitetura
+### Arquitetura
 
 O projeto usa uma arquitetura em camadas inspirada em Clean Code, SOLID e separação de responsabilidades.
 
