@@ -1,7 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from app.api.rotas import saude
+from app.banco.conexao import criar_tabelas
 from app.routers import analises
+
 app = FastAPI(
     title="LASIC VISION API",
     version="0.1.0",
@@ -24,3 +27,9 @@ app.add_middleware(
 
 app.include_router(saude.router)
 app.include_router(analises.router)
+
+
+@app.on_event("startup")
+def inicializar_banco() -> None:
+    """Cria as tabelas locais antes de a aplicacao aceitar requisicoes."""
+    criar_tabelas()
