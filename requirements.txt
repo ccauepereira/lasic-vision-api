@@ -6,3 +6,4 @@ numpy
 pydantic
 sqlalchemy
 pytest
+httpx2
