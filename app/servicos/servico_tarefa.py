@@ -1,6 +1,9 @@
 from uuid import UUID
 
 from app.dominio.entidades.tarefa import Tarefa
+from app.dominio.entidades.resultado_analise_imagem import (
+    ResultadoAnaliseImagem,
+)
 from app.dominio.excecoes import ErroTarefaNaoEncontrada
 from app.dominio.protocolos import (
     ProtocoloAnalisadorImagem,
@@ -57,11 +60,12 @@ class ServicoTarefa:
         tarefa_id: UUID,
         nome_arquivo: str,
         conteudo: bytes,
-    ) -> Tarefa:
+    ) -> ResultadoAnaliseImagem:
         tarefa = self.buscar_tarefa_por_id(tarefa_id)
         resultado = self._analisador_imagem.analisar(nome_arquivo, conteudo)
         tarefa.registrar_resultado(resultado)
-        return self._repositorio_tarefa.salvar(tarefa)
+        self._repositorio_tarefa.salvar(tarefa)
+        return resultado
 
     def concluir_tarefa(self, tarefa_id: UUID) -> Tarefa:
         tarefa = self.buscar_tarefa_por_id(tarefa_id)

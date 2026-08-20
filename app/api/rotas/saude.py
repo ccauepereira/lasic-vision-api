@@ -1,10 +1,15 @@
 from fastapi import APIRouter
 
-router = APIRouter(tags=["Health"])
+router = APIRouter(tags=["Saude"])
 
 
-@router.get("/health")
-def health_check():
+@router.get(
+    "/health",
+    summary="Verifica a saude da API",
+    description="Informa se a LASIC Vision API esta disponivel.",
+    response_description="Estado atual da API.",
+)
+def verificar_saude() -> dict[str, str]:
     return {
         "status": "ok",
         "projeto": "LASIC Vision API",

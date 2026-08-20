@@ -2,9 +2,8 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session, selectinload, sessionmaker
+from sqlalchemy.orm import Session, selectinload
 
-from app.banco.conexao import fabrica_sessoes
 from app.banco.modelos_sqlalchemy import ModeloAnaliseImagem, ModeloTarefa
 from app.dominio.entidades.resultado_analise_imagem import (
     ResultadoAnaliseImagem,
@@ -17,36 +16,31 @@ from app.dominio.protocolos import ProtocoloRepositorioTarefa
 class RepositorioTarefaSQLite(ProtocoloRepositorioTarefa):
     """Persiste tarefas e resultados SQLite, convertendo-os para o dominio."""
 
-    def __init__(
-        self,
-        fabrica_de_sessoes: sessionmaker[Session] = fabrica_sessoes,
-    ) -> None:
-        self._fabrica_de_sessoes = fabrica_de_sessoes
+    def __init__(self, sessao: Session) -> None:
+        self._sessao = sessao
 
     def salvar(self, tarefa: Tarefa) -> Tarefa:
-        with self._fabrica_de_sessoes() as sessao:
-            modelo_tarefa = self._buscar_modelo_por_id(
-                sessao,
-                tarefa.tarefa_id,
-            )
+        modelo_tarefa = self._buscar_modelo_por_id(
+            self._sessao,
+            tarefa.tarefa_id,
+        )
 
-            if modelo_tarefa is None:
-                modelo_tarefa = self._criar_modelo_tarefa(tarefa)
-                sessao.add(modelo_tarefa)
-            else:
-                self._atualizar_modelo_tarefa(modelo_tarefa, tarefa)
+        if modelo_tarefa is None:
+            modelo_tarefa = self._criar_modelo_tarefa(tarefa)
+            self._sessao.add(modelo_tarefa)
+        else:
+            self._atualizar_modelo_tarefa(modelo_tarefa, tarefa)
 
-            self._sincronizar_resultado(modelo_tarefa, tarefa)
-            sessao.commit()
-            sessao.refresh(modelo_tarefa)
-            return self._converter_para_entidade(modelo_tarefa)
+        self._sincronizar_resultado(modelo_tarefa, tarefa)
+        self._sessao.commit()
+        self._sessao.refresh(modelo_tarefa)
+        return self._converter_para_entidade(modelo_tarefa)
 
     def buscar_por_id(self, tarefa_id: UUID) -> Tarefa | None:
-        with self._fabrica_de_sessoes() as sessao:
-            modelo_tarefa = self._buscar_modelo_por_id(sessao, tarefa_id)
-            if modelo_tarefa is None:
-                return None
-            return self._converter_para_entidade(modelo_tarefa)
+        modelo_tarefa = self._buscar_modelo_por_id(self._sessao, tarefa_id)
+        if modelo_tarefa is None:
+            return None
+        return self._converter_para_entidade(modelo_tarefa)
 
     def listar_todas(self) -> list[Tarefa]:
         consulta = (
@@ -55,12 +49,11 @@ class RepositorioTarefaSQLite(ProtocoloRepositorioTarefa):
             .order_by(ModeloTarefa.criado_em)
         )
 
-        with self._fabrica_de_sessoes() as sessao:
-            modelos_tarefa = sessao.scalars(consulta).all()
-            return [
-                self._converter_para_entidade(modelo_tarefa)
-                for modelo_tarefa in modelos_tarefa
-            ]
+        modelos_tarefa = self._sessao.scalars(consulta).all()
+        return [
+            self._converter_para_entidade(modelo_tarefa)
+            for modelo_tarefa in modelos_tarefa
+        ]
 
     @staticmethod
     def _buscar_modelo_por_id(
