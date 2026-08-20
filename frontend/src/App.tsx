@@ -1,76 +1,105 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Cabecalho } from './componentes/cabecalho';
 import { ListaTarefas } from './componentes/lista_tarefas';
 import { EstadoVazio } from './componentes/estado_vazio';
 import { DetalhesTarefa } from './componentes/detalhes_tarefa';
 import { FormularioTarefa } from './componentes/formulario_tarefa';
-import { tarefasSimuladas } from './dados/tarefas_simuladas';
-import type { Tarefa, ResultadoAnalise } from './tipos/tarefa';
-
-// PONTO DE INTEGRACAO FUTURA: 
-// Substituir a gestao de estado local destas funcoes por chamadas HTTP reais da FastAPI.
+import type { Tarefa } from './tipos/tarefa';
+import {
+  verificarSaude,
+  listarTarefas,
+  criarTarefa as apiCriarTarefa,
+  atribuirResponsavel as apiAtribuirResponsavel,
+  iniciarTarefa as apiIniciarTarefa,
+  analisarImagem as apiAnalisarImagem,
+  concluirTarefa as apiConcluirTarefa,
+} from './servicos/cliente_api';
 
 function App() {
-  const [tarefas, setTarefas] = useState<Tarefa[]>(tarefasSimuladas);
-  const [selecionadaId, setSelecionadaId] = useState<number | null>(null);
+  const [tarefas, setTarefas] = useState<Tarefa[]>([]);
+  const [selecionadaId, setSelecionadaId] = useState<string | null>(null);
   const [criando, setCriando] = useState(false);
+  const [apiConectada, setApiConectada] = useState<boolean | null>(null);
+  const [carregandoTarefas, setCarregandoTarefas] = useState(false);
+
+  const carregarTarefas = useCallback(async () => {
+    const saudeOk = await verificarSaude();
+    setApiConectada(saudeOk);
+
+    setCarregandoTarefas(true);
+    try {
+      const lista = await listarTarefas();
+      setTarefas(lista);
+    } catch {
+      // erro manipulado nos componentes ou estado mantido
+    } finally {
+      setCarregandoTarefas(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    carregarTarefas();
+  }, [carregarTarefas]);
 
   const tarefaSelecionada = tarefas.find(t => t.id === selecionadaId) || null;
 
-  const criarTarefa = (titulo: string, descricao: string) => {
-    const nova: Tarefa = {
-      id: Math.max(...tarefas.map(t => t.id), 0) + 1,
-      titulo,
-      descricao,
-      responsavel: null,
-      status: 'pendente',
-      resultadoAnalise: null
-    };
-    setTarefas([...tarefas, nova]);
+  const criarTarefa = async (titulo: string, descricao: string) => {
+    const nova = await apiCriarTarefa(titulo, descricao);
+    await carregarTarefas();
     setCriando(false);
     setSelecionadaId(nova.id);
   };
 
-  const atualizarTarefa = (id: number, atualizacoes: Partial<Tarefa>) => {
-    setTarefas(tarefas.map(t => t.id === id ? { ...t, ...atualizacoes } : t));
+  const atribuirResponsavel = async (id: string, responsavel: string) => {
+    await apiAtribuirResponsavel(id, responsavel);
+    await carregarTarefas();
   };
 
-  const simularAnalise = (): ResultadoAnalise => ({
-    largura: 800,
-    altura: 600,
-    formato: 'PNG',
-    modoCor: 'Grayscale',
-    brilhoMedio: 98.4,
-    contrasteMedio: 32.1,
-    classificacaoBrilho: 'Escuro',
-    classificacaoContraste: 'Baixo',
-    quantidadeBordas: 450,
-    tagsAutomaticas: ['simulacao', 'teste']
-  });
+  const iniciarTarefa = async (id: string) => {
+    await apiIniciarTarefa(id);
+    await carregarTarefas();
+  };
+
+  const enviarImagem = async (id: string, arquivo: File) => {
+    await apiAnalisarImagem(id, arquivo);
+    await carregarTarefas();
+  };
+
+  const concluirTarefa = async (id: string) => {
+    await apiConcluirTarefa(id);
+    await carregarTarefas();
+  };
 
   return (
     <div className="layout">
-      <Cabecalho />
+      <Cabecalho apiConectada={apiConectada} />
       <div className="conteudo-principal">
-        <ListaTarefas 
-          tarefas={tarefas} 
-          tarefaSelecionadaId={selecionadaId} 
-          aoSelecionar={(t) => { setSelecionadaId(t.id); setCriando(false); }} 
-          aoNovaTarefa={() => { setCriando(true); setSelecionadaId(null); }}
+        <ListaTarefas
+          tarefas={tarefas}
+          tarefaSelecionadaId={selecionadaId}
+          aoSelecionar={t => {
+            setSelecionadaId(t.id);
+            setCriando(false);
+          }}
+          aoNovaTarefa={() => {
+            setCriando(true);
+            setSelecionadaId(null);
+          }}
+          carregando={carregandoTarefas}
         />
         <main className="coluna-principal">
           {criando ? (
-            <FormularioTarefa 
-              aoCriar={criarTarefa} 
-              aoCancelar={() => setCriando(false)} 
+            <FormularioTarefa
+              aoCriar={criarTarefa}
+              aoCancelar={() => setCriando(false)}
             />
           ) : tarefaSelecionada ? (
-            <DetalhesTarefa 
-              tarefa={tarefaSelecionada} 
-              aoAtribuirResponsavel={(id, res) => atualizarTarefa(id, { responsavel: res })}
-              aoIniciar={(id) => atualizarTarefa(id, { status: 'em_andamento' })}
-              aoEnviarImagem={(id) => atualizarTarefa(id, { resultadoAnalise: simularAnalise() })}
-              aoConcluir={(id) => atualizarTarefa(id, { status: 'concluida' })}
+            <DetalhesTarefa
+              tarefa={tarefaSelecionada}
+              aoAtribuirResponsavel={atribuirResponsavel}
+              aoIniciar={iniciarTarefa}
+              aoEnviarImagem={enviarImagem}
+              aoConcluir={concluirTarefa}
             />
           ) : (
             <EstadoVazio />
