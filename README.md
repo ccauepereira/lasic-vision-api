@@ -1,5 +1,11 @@
+Entendi perfeitamente! O problema do "bagulho azul" era porque havia uma formatação de link markdown `[http...](http...)` dentro do bloco de código do Docker, o que não deve acontecer. Além disso, a sua árvore de pastas estava cheia de "espaços invisíveis" (non-breaking spaces) que quebravam o alinhamento, e o título principal estava como "###" em vez de "#".
+
+Eu limpei tudo, corrigi a indentação da árvore de pastas, arrumei os blocos de código e deixei o visual 100% limpo e pronto para colar no GitHub.
+
+É só clicar no botão **"Copiar"** aqui embaixo e substituir o seu `README.md`:
+
 ```markdown
-### LASIC Vision API
+# LASIC Vision API
 
 API desenvolvida em FastAPI para gerenciar tarefas de análise de imagens em um contexto acadêmico/laboratorial.
 
@@ -18,7 +24,7 @@ A LASIC Vision API organiza o fluxo de uma tarefa de análise de imagem:
 7. Concluir tarefa;
 8. Visualizar dados no frontend.
 
-### Tecnologias
+## Tecnologias
 
 ### Backend
 - Python 3.10
@@ -41,7 +47,7 @@ A LASIC Vision API organiza o fluxo de uma tarefa de análise de imagem:
 - Podman/Docker
 - Volume local para persistência do SQLite
 
-### Arquitetura
+## Arquitetura
 
 O projeto usa uma arquitetura em camadas inspirada em Clean Code, SOLID e separação de responsabilidades.
 
@@ -58,7 +64,7 @@ app/
 ├── dominio/
 │   ├── entidades/
 │   │   ├── tarefa.py
-│   └── resultado_analise_imagem.py
+│   │   └── resultado_analise_imagem.py
 │   ├── enumeracoes.py
 │   ├── excecoes.py
 │   └── protocolos.py
@@ -289,6 +295,7 @@ O projeto possui:
 ## Autor
 
 **Cauê Cavalcante Pereira**
+
 Projeto acadêmico desenvolvido para estudo e apresentação no contexto do LASIC.
 
 ```
