@@ -43,8 +43,8 @@ if origem_frontend:
 # Adicionamos o middleware liberando estritamente a porta de dev do React (:5173).
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origens_cors,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
