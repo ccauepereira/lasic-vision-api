@@ -1,8 +1,60 @@
-.venv/
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+
+# Ambientes virtuais
+.venv/
+venv/
+env/
+
+# Variaveis de ambiente
 .env
+.env.*
+!.env.example
+
+# Testes, coverage e caches
 .pytest_cache/
-node_modules/
-*.sqlite3
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.cache/
+
+# Logs
+*.log
+
+# SQLite e dados locais
 *.db
+*.sqlite
+*.sqlite3
+dados/*
+!dados/.gitkeep
+app/dados/*
+!app/dados/.gitkeep
+
+# Uploads e arquivos temporarios
+uploads/
+app/uploads/
+tmp/
+temp/
+
+# Frontend / React / Vite
+node_modules/
+dist/
+.vite/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+# Sistema operacional e editores
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Docker local
+docker-data/
