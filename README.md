@@ -1,135 +1,296 @@
-# LASIC Vision API — Documentação do Projeto
+```markdown
+# LASIC Vision API
 
-API desenvolvida em FastAPI para organização e execução de análises computacionais de imagens em contexto acadêmico/laboratorial, aplicando GitFlow, POO em Python, princípios SOLID, Clean Code e testes automatizados.
+API desenvolvida em FastAPI para gerenciar tarefas de análise de imagens em um contexto acadêmico/laboratorial.
 
----
+O projeto possui backend em Python com FastAPI, banco SQLite com SQLAlchemy, análise simples de imagem com OpenCV e frontend em React + TypeScript para consumir a API.
 
-## 🖥️ Seção: Cauê Test (Interface da Branch `feature/fastapi-basic`)
+## Objetivo
 
-### 1. O que é o Cauê Test?
-O **Cauê Test** é um painel visual didático e interativo desenvolvido em **React + TypeScript + Vite** dentro do diretório `frontend/`. Ele funciona como um cliente de laboratório para testar e demonstrar em tempo real os endpoints expostos pela **LASIC Vision API**.
+A LASIC Vision API organiza o fluxo de uma tarefa de análise de imagem:
 
----
+1. Criar tarefa;
+2. Atribuir responsável;
+3. Iniciar análise;
+4. Enviar imagem;
+5. Extrair métricas com OpenCV;
+6. Salvar resultado;
+7. Concluir tarefa;
+8. Visualizar dados no frontend.
 
-### 2. Qual problema ele resolve?
-Antes da criação desta interface, a verificação das métricas extraídas pelo OpenCV dependia do envio manual de requisições via cURL, Postman ou pela documentação OpenAPI/Swagger (`/docs`). 
+## Tecnologias
 
-O **Cauê Test** resolve esse problema ao fornecer:
-- Uma interface gráfica limpa e responsiva.
-- Preview imediato da imagem selecionada.
-- Exibição de métricas estruturadas em *cards* visuais.
-- Agrupamento de tags automáticas em *badges*.
-- Apresentação didática do JSON bruto retornado pela API para fins de inspeção e validação acadêmica.
+### Backend
+- Python 3.10
+- FastAPI
+- Pydantic
+- SQLAlchemy
+- SQLite
+- OpenCV
+- NumPy
+- Pytest
 
----
+### Frontend
+- React
+- TypeScript
+- Vite
+- Lucide React
 
-### 3. Como o Frontend conversa com o Backend?
+### Container
+- Dockerfile
+- Podman/Docker
+- Volume local para persistência do SQLite
 
-A comunicação ocorre via protocolo HTTP (REST) entre o cliente React (`http://127.0.0.1:5173`) e o servidor FastAPI (`http://127.0.0.1:8000`):
+## Arquitetura
 
-1. **Checagem de Integridade (`GET /health`)**:
-   - O botão `⚡ Testar GET /health` dispara uma requisição `GET` sem corpo para `http://127.0.0.1:8000/health`.
-   - O backend retorna um JSON confirmando o estado operacional (`{"status": "ok", "projeto": "LASIC Vision API", "versao": "0.1.0"}`).
+O projeto usa uma arquitetura em camadas inspirada em Clean Code, SOLID e separação de responsabilidades.
 
-2. **Envio e Análise de Imagem (`POST /analises/imagem`)**:
-   - A imagem selecionada é empacotada em um objeto nativo `FormData` sob a chave `arquivo`.
-   - O frontend envia uma requisição `POST` com o cabeçalho `multipart/form-data` para `http://127.0.0.1:8000/analises/imagem`.
-   - O backend processa o arquivo via OpenCV e retorna um payload JSON contendo os dados analíticos.
+```text
+app/
+├── main.py
+├── api/
+│   └── rotas/
+│       ├── saude.py
+│       └── tarefas.py
+├── esquemas/
+│   ├── tarefa.py
+│   └── analise_imagem.py
+├── dominio/
+│   ├── entidades/
+│   │   ├── tarefa.py
+│   └── resultado_analise_imagem.py
+│   ├── enumeracoes.py
+│   ├── excecoes.py
+│   └── protocolos.py
+├── servicos/
+│   └── servico_tarefa.py
+├── repositorios/
+│   └── sqlite/
+│       └── repositorio_tarefa_sqlite.py
+├── banco/
+│   ├── conexao.py
+│   └── modelos_sqlalchemy.py
+└── visao/
+    └── analisador_imagem_opencv.py
 
-3. **Configuração de CORS (Cross-Origin Resource Sharing)**:
-   - Para permitir essa comunicação entre portas distintas (`:5173` -> `:8000`), o FastAPI utiliza o `CORSMiddleware` em `app/main.py`, liberando estritamente as origens `http://127.0.0.1:5173` e `http://localhost:5173`.
+```
 
----
+### Responsabilidade das Camadas
 
-### 4. Como rodar o Backend
+* **`main.py`**: Monta a aplicação FastAPI, registra as rotas, configura CORS, trata exceções globais e cria as tabelas do banco no startup.
+* **`api/rotas`**: Define os endpoints HTTP. As rotas recebem requisições, chamam os serviços e retornam respostas JSON.
+* **`esquemas`**: Define os contratos de entrada e saída da API usando Pydantic.
+* **`dominio`**: Concentra as regras principais do sistema, como status da tarefa, validações de negócio e entidades.
+* **`servicos`**: Coordena os casos de uso da aplicação, como criar tarefa, iniciar tarefa, analisar imagem e concluir tarefa.
+* **`repositorios`**: Isola o acesso ao banco de dados. O restante do sistema trabalha com entidades do domínio, não diretamente com tabelas SQLAlchemy.
+* **`banco`**: Configura o SQLite, cria sessões e define os modelos SQLAlchemy usados para persistência.
+* **`visao`**: Isola o uso do OpenCV e NumPy para extrair métricas simples de imagens.
 
-A partir da raiz do projeto (`lasic-vision-api/`):
+### Fluxo da Aplicação
+
+```text
+Frontend React
+       ↓ (HTTP / JSON / FormData)
+Rotas FastAPI
+       ↓
+Schemas Pydantic
+       ↓
+ServicoTarefa
+       ↓
+Dominio
+       ↓
+Repositorio SQLite
+       ↓
+Banco SQLite
+
+```
+
+No caso de análise de imagem, o service também chama o módulo de visão:
+
+```text
+ServicoTarefa
+       ↓
+AnalisadorImagemOpenCV
+       ↓
+ResultadoAnaliseImagem
+
+```
+
+### Regras de Negócio
+
+* Uma tarefa nasce com status `pendente`;
+* Uma tarefa `pendente` pode receber responsável;
+* Uma tarefa só pode iniciar se possuir responsável;
+* Uma tarefa iniciada fica com status `em_andamento`;
+* Somente uma tarefa `em_andamento` pode receber resultado de análise;
+* Uma tarefa só pode ser concluída se possuir resultado de análise;
+* Uma tarefa `concluida` não deve ser alterada pelo fluxo principal.
+
+## Endpoints
+
+### Saúde
+
+| Método | Rota | Descrição |
+| --- | --- | --- |
+| GET | `/health` | Verifica se a API está disponível |
+
+### Tarefas
+
+| Método | Rota | Descrição |
+| --- | --- | --- |
+| POST | `/tarefas` | Cria uma tarefa |
+| GET | `/tarefas` | Lista todas as tarefas |
+| GET | `/tarefas/{tarefa_id}` | Busca tarefa por ID |
+| PATCH | `/tarefas/{tarefa_id}/responsavel` | Atribui responsável |
+| POST | `/tarefas/{tarefa_id}/iniciar` | Inicia uma tarefa |
+| POST | `/tarefas/{tarefa_id}/analises/imagem` | Analisa imagem da tarefa |
+| POST | `/tarefas/{tarefa_id}/concluir` | Conclui uma tarefa |
+
+### Exemplo de Fluxo no Swagger
+
+1. Acesse `http://127.0.0.1:8000/docs`.
+2. Execute `GET /health`.
+3. Execute `POST /tarefas`.
+4. Copie o `tarefa_id`.
+5. Execute `PATCH /tarefas/{tarefa_id}/responsavel`.
+6. Execute `POST /tarefas/{tarefa_id}/iniciar`.
+7. Execute `POST /tarefas/{tarefa_id}/analises/imagem`.
+8. Execute `POST /tarefas/{tarefa_id}/concluir`.
+9. Execute `GET /tarefas/{tarefa_id}`.
+
+## Análise de Imagem com OpenCV
+
+A imagem enviada é processada pelo arquivo: `app/visao/analisador_imagem_opencv.py`.
+
+A API extrai:
+
+| Campo | Descrição |
+| --- | --- |
+| `largura` | largura da imagem em pixels |
+| `altura` | altura da imagem em pixels |
+| `formato` | extensão/formato da imagem |
+| `modo_cor` | modo de cor identificado |
+| `brilho_medio` | média dos pixels em tons de cinza |
+| `contraste_medio` | desvio padrão dos pixels em tons de cinza |
+| `quantidade_bordas` | total de bordas detectadas com Canny |
+| `classificacao_brilho` | classifica a imagem como escura, normal ou clara |
+| `classificacao_contraste` | classifica o contraste |
+| `tags_automaticas` | tags geradas a partir das métricas |
+
+Trecho central da análise:
+
+```python
+brilho_medio = float(np.mean(imagem_cinza))
+contraste_medio = float(np.std(imagem_cinza))
+bordas = cv2.Canny(imagem_cinza, 100, 200)
+
+```
+
+## Banco de Dados
+
+O projeto usa **SQLite** com **SQLAlchemy**. O SQLite salva os dados em um arquivo local: `lasic_vision.db`
+
+* A conexão fica em: `app/banco/conexao.py`
+* Os modelos de tabela ficam em: `app/banco/modelos_sqlalchemy.py`
+* O repository fica em: `app/repositorios/sqlite/repositorio_tarefa_sqlite.py`
+
+Essa separação evita que as rotas e regras de negócio dependam diretamente do banco de dados.
+
+## Frontend
+
+O frontend está no diretório: `frontend/`
+
+Ele foi desenvolvido com **React, TypeScript e Vite**. O arquivo que centraliza o consumo da API é: `frontend/src/servicos/cliente_api.ts`
+
+O frontend consome a API usando `fetch`, envia JSON para criar e atualizar tarefas e usa `FormData` para enviar imagens.
+
+## Como Rodar Sem Docker
+
+### Backend
 
 ```bash
-# 1. Ativar o ambiente virtual Python
+python3 -m venv .venv
 source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload
 
-# 2. Iniciar o servidor Uvicorn com hot-reload ativo na porta 8000
-uvicorn app.main:app --reload --port 8000
 ```
-> **Servidor Backend ativo em:** `http://127.0.0.1:8000`  
-> **Documentação Swagger:** `http://127.0.0.1:8000/docs`
 
----
+* **Backend:** `http://127.0.0.1:8000`
+* **Swagger:** `http://127.0.0.1:8000/docs`
 
-### 5. Como rodar o Frontend
-
-Em um novo terminal, navegue até a pasta `frontend/`:
+### Frontend
 
 ```bash
-# 1. Entrar na pasta do frontend
 cd frontend
-
-# 2. Instalar as dependências do Node.js (caso necessário)
 npm install
-
-# 3. Iniciar o servidor de desenvolvimento Vite
 npm run dev
+
 ```
-> **Aplicação Frontend ativa em:** `http://localhost:5173`
 
----
+* **Frontend:** `http://127.0.0.1:5173`
 
-### 6. Roteiro de Testes
+## Como Rodar Com Podman/Docker
 
-#### Teste 1: Checagem do Endpoint `/health`
-1. Com o backend e o frontend em execução, abra `http://localhost:5173`.
-2. No cabeçalho superior, clique no botão **"⚡ Testar GET /health"**.
-3. Observe a resposta: um badge verde indicará `✓ Status: ok (LASIC Vision API v0.1.0)`.
+### Backend
 
-#### Teste 2: Upload e Análise de Imagem
-1. No painel **"1. Entrada de Imagem"**, clique na área pontilhada para selecionar um arquivo de imagem (`.png`, `.jpg`, `.jpeg` ou `.bmp`).
-2. Confirme se a imagem é carregada na área de *preview* com a indicação do nome e tamanho do arquivo.
-3. Clique no botão **"Analisar Imagem"**.
-4. Observe o indicador de carregamento (*loading spinner*).
-5. Após o retorno do backend, veja no painel **"2. Resultados da Análise"**:
-   - Os 9 *cards* contendo as métricas computadas.
-   - As *badges* com as tags geradas automaticamente.
-   - O bloco de código com o JSON bruto formatado.
+Na raiz do projeto:
 
----
+```bash
+podman build -t lasic-vision-backend .
+mkdir -p dados
+podman run --rm \
+  -p 8000:8000 \
+  -v "$(pwd)/dados:/app/dados" \
+  lasic-vision-backend
 
-### 7. Quais dados o OpenCV retorna?
+```
 
-A classe `OpenCVAnalyzer` (`app/vision/opencv_analyzer.py`) processa os bytes da imagem enviada e retorna a seguinte estrutura JSON:
+### Frontend
 
-| Campo | Tipo | Descrição / Método de Cálculo |
-| :--- | :--- | :--- |
-| `arquivo` | `string` | Nome original do arquivo enviado pelo cliente |
-| `largura` | `integer` | Largura da imagem em pixels (`imagem.shape[1]`) |
-| `altura` | `integer` | Altura da imagem em pixels (`imagem.shape[0]`) |
-| `modo_cor` | `string` | Espaço de cor computado (ex: `"BGR com 3 canais"`) |
-| `brilho_medio` | `float` | Média de luminância da imagem em escala de cinza (`np.mean`) |
-| `contraste_medio` | `float` | Desvio padrão da luminância em escala de cinza (`np.std`) |
-| `quantidade_bordas` | `integer` | Total de pixels de borda detectados pelo algoritmo Canny (`cv2.Canny`) |
-| `classificacao_brilho` | `string` | Classificação categórica: `"escura"`, `"clara"` ou `"normal"` |
-| `classificacao_contraste` | `string` | Classificação categórica: `"baixo_contraste"`, `"alto_contraste"` ou `"contraste_adequado"` |
-| `tags_automaticas` | `list[str]` | Conjunto ordenado de tags geradas a partir das métricas extraídas |
+Em outro terminal:
 
----
+```bash
+cd frontend
+podman build -t lasic-vision-frontend .
+podman run --rm \
+  -p 5173:5173 \
+  -e VITE_URL_API=[http://127.0.0.1:8000](http://127.0.0.1:8000) \
+  lasic-vision-frontend
 
-### 8. Limitações Atuais do Sistema
+```
 
-Nesta etapa inicial do desenvolvimento (`feature/fastapi-basic`), o sistema possui as seguintes limitações deliberadas:
+## Testes
 
-- **Visão Computacional Clássica**: A análise é puramente estatística/determinística usando algoritmos clássicos do OpenCV (médias, desvio padrão, filtro Canny). Não há uso de modelos de Inteligência Artificial ou Redes Neurais Convolucionais nesta fase.
-- **Arquitetura Stateless (Sem Banco de Dados)**: As análises são processadas em memória e os resultados não são salvos em banco de dados relacional ou não-relacional.
-- **Sem Autenticação/Autorização**: Todos os endpoints são públicos e não requerem tokens JWT ou controle de acesso.
-- **Regras de Análise Simples**: As regras de classificação utilizam limiares estáticos (*thresholds*) para fins demonstrativos.
+Os testes estão em: `app/tests/`
 
----
+Para executar:
 
-### 9. Próximos Passos do Projeto
+```bash
+pytest
 
-O planejamento da evolução do projeto prevê a implementação dos seguintes módulos nas próximas sprints:
+```
 
-1. **Processamento Assíncrono / Tarefas em Segundo Plano**: Integração de filas para processamento de imagens de alta resolução sem bloquear a thread principal da API.
-2. **Persistência de Dados (SQLite + SQLAlchemy)**: Criação de banco de dados para histórico de análises efetuadas.
-3. **Containerização com Docker**: Empacotamento do backend FastAPI, do frontend React e do banco em contêineres Docker usando `docker-compose`.
-4. **Evolução do Frontend Principal**: Expansão do painel técnico para incluir histórico de análises, filtros e dashboards comparativos.
-5. **Ampliação de Testes**: Expansão da suíte de testes automatizados no backend (`pytest`) e testes de componentes no frontend.
+Os testes cobrem regras de domínio, serviço de tarefas e rotas principais da API.
+
+## Status do Projeto
+
+O projeto possui:
+
+* [x] Backend FastAPI funcionando;
+* [x] Frontend React consumindo a API;
+* [x] Banco SQLite persistindo tarefas e resultados;
+* [x] OpenCV extraindo métricas simples de imagem;
+* [x] Dockerfile para backend;
+* [x] Dockerfile para frontend;
+* [x] Testes automatizados com Pytest;
+* [x] Organização em camadas com separação de responsabilidades.
+
+## Autor
+
+**Cauê Cavalcante Pereira**
+Projeto acadêmico desenvolvido para estudo e apresentação no contexto do LASIC.
+
+```
+
+```
